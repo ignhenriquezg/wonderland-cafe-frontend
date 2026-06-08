@@ -1,1 +1,63 @@
 @import "tailwindcss";
+
+/* =========================================
+   PERSONALIZACIÓN DE FULLCALENDAR
+   Tema: Wonderland Café
+========================================= */
+
+/* Color de los eventos (Las reservas) */
+.fc-event {
+  background-color: #15803d !important; /* text-green-700 */
+  border-color: #166534 !important; /* text-green-800 */
+  color: white !important;
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.fc-event:hover {
+  background-color: #166534 !important;
+  transform: scale(1.02);
+}
+
+/* Color de los botones principales (Mes, Hoy, Flechas) */
+.fc .fc-button-primary {
+  background-color: #b45309 !important; /* text-amber-700 */
+  border-color: #92400e !important; /* text-amber-800 */
+  text-transform: capitalize;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+}
+
+.fc .fc-button-primary:hover {
+  background-color: #92400e !important; /* text-amber-800 */
+}
+
+/* Color del botón activo (ej: cuando estás en la vista de Mes) */
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background-color: #78350f !important; /* text-amber-900 */
+  border-color: #78350f !important;
+}
+
+/* Color de la barra de título del calendario */
+.fc .fc-toolbar-title {
+  color: #78350f; /* text-amber-900 */
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+/* Resaltar el día actual */
+.fc .fc-day-today {
+  background-color: #fef3c7 !important; /* bg-amber-50 */
+}
+
+/* Enlaces de los días (los números) */
+.fc .fc-daygrid-day-number {
+  color: #57534e; /* text-stone-600 */
+  font-weight: 500;
+  text-decoration: none !important;
+}
