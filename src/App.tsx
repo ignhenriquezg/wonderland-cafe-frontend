@@ -1,11 +1,20 @@
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-amber-700">
-        Bienvenido a Wonderland Café - Frontend
-      </h1>
-    </div>
+    <BrowserRouter>
+      <Routes>
+        {/* Si alguien entra a la raíz (/), lo redirigimos automáticamente al Login */}
+        <Route path="/" element={<Navigate to="/login" />} />
+        
+        {/* Rutas principales */}
+        <Route path="/login" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
-export default App
+export default App;
