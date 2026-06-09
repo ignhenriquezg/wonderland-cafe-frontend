@@ -5,6 +5,7 @@ import Clientes from './pages/Clientes';
 import Menus from './pages/Menus';
 import Tematicas from './pages/Tematicas';
 import Insumos from './pages/Insumos';
+import Personal from './pages/Personal';
 import Layout from './components/Layout';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/menus" element={<Menus />} />
           <Route path="/tematicas" element={<Tematicas />} />
           <Route path="/insumos" element={<Insumos />} />
+          <Route path="/personal" element={<Personal />} />
         </Route>
         
       </Routes>

@@ -39,11 +39,9 @@ export default function Layout() {
           <NavLink to="/insumos" className={navClass}>
             <span>📦</span> Insumos
           </NavLink>
-          
-          {/* Este lo conectaremos al final */}
-          <div className="flex items-center gap-3 px-4 py-3 text-stone-500 rounded-lg cursor-not-allowed">
+          <NavLink to="/personal" className={navClass}>
             <span>🧑‍🍳</span> Personal (Staff)
-          </div>
+          </NavLink>
         </nav>
 
         <div className="p-4 border-t border-stone-700">
