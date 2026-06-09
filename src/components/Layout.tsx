@@ -36,11 +36,11 @@ export default function Layout() {
           <NavLink to="/tematicas" className={navClass}>
             <span>🎭</span> Temáticas
           </NavLink>
-          
-          {/* Estos los conectaremos después */}
-          <div className="flex items-center gap-3 px-4 py-3 text-stone-500 rounded-lg cursor-not-allowed">
+          <NavLink to="/insumos" className={navClass}>
             <span>📦</span> Insumos
-          </div>
+          </NavLink>
+          
+          {/* Este lo conectaremos al final */}
           <div className="flex items-center gap-3 px-4 py-3 text-stone-500 rounded-lg cursor-not-allowed">
             <span>🧑‍🍳</span> Personal (Staff)
           </div>
