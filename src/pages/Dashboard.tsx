@@ -117,85 +117,37 @@ export default function Dashboard() {
     }
   };
 
-  const handleCerrarSesion = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
-  };
-
   return (
-    // CONTENEDOR PRINCIPAL: Flexbox para dividir Sidebar y Contenido
-    <div className="flex h-screen bg-stone-100 overflow-hidden">
-      
-      {/* 1. SIDEBAR (Barra de Navegación Lateral) */}
-      <aside className="w-64 bg-stone-900 text-stone-300 flex flex-col shadow-2xl z-20">
-        <div className="p-6 border-b border-stone-700">
-          <h2 className="text-2xl font-bold text-amber-500 tracking-wider">WONDERLAND</h2>
-          <p className="text-sm text-stone-400">Admin Panel</p>
-        </div>
-
-        <nav className="flex-1 px-4 py-6 space-y-2">
-          <a href="#" className="flex items-center gap-3 px-4 py-3 bg-amber-700 text-white rounded-lg transition-colors font-medium">
-            <span>📅</span> Reservas
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-stone-800 rounded-lg transition-colors cursor-pointer">
-            <span>👥</span> Clientes
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-stone-800 rounded-lg transition-colors cursor-pointer">
-            <span>🍔</span> Menús y Catálogo
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-stone-800 rounded-lg transition-colors cursor-pointer">
-            <span>📦</span> Insumos
-          </a>
-          <a href="#" className="flex items-center gap-3 px-4 py-3 hover:bg-stone-800 rounded-lg transition-colors cursor-pointer">
-            <span>🧑‍🍳</span> Personal (Staff)
-          </a>
-        </nav>
-
-        <div className="p-4 border-t border-stone-700">
+    <>
+      <div className="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-xl">
+        <div className="flex justify-between items-center mb-6 border-b pb-4">
+          <div>
+            <h1 className="text-3xl font-bold text-amber-800">Panel de Calendario</h1>
+            <p className="text-stone-500">Gestión de eventos y disponibilidad</p>
+          </div>
           <button 
-            onClick={handleCerrarSesion}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-stone-800 hover:bg-red-900 hover:text-white text-stone-300 rounded-lg transition-colors cursor-pointer"
+            onClick={() => setIsModalOpen(true)}
+            className="bg-amber-700 hover:bg-amber-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer shadow-md"
           >
-            <span>🚪</span> Cerrar Sesión
+            + Nueva Reserva
           </button>
         </div>
-      </aside>
 
-      {/* 2. ÁREA DE TRABAJO PRINCIPAL (Contenido dinámico) */}
-      <main className="flex-1 overflow-y-auto p-8 relative">
-        <div className="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-xl">
-          
-          <div className="flex justify-between items-center mb-6 border-b pb-4">
-            <div>
-              <h1 className="text-3xl font-bold text-amber-800">Panel de Calendario</h1>
-              <p className="text-stone-500">Gestión de eventos y disponibilidad</p>
-            </div>
-            
-            <button 
-              onClick={() => setIsModalOpen(true)}
-              className="bg-amber-700 hover:bg-amber-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer shadow-md"
-            >
-              + Nueva Reserva
-            </button>
-          </div>
-
-          <div className="calendar-container">
-            <FullCalendar
-              plugins={[ dayGridPlugin, interactionPlugin ]}
-              initialView="dayGridMonth"
-              events={eventosCalendario}
-              locale="es"
-              height="auto"
-              headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth' }}
-              buttonText={{ today: 'Hoy', month: 'Mes' }}
-              eventClick={handleEventClick}
-            />
-          </div>
-
+        <div className="calendar-container">
+          <FullCalendar
+            plugins={[ dayGridPlugin, interactionPlugin ]}
+            initialView="dayGridMonth"
+            events={eventosCalendario}
+            locale="es"
+            height="auto"
+            headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth' }}
+            buttonText={{ today: 'Hoy', month: 'Mes' }}
+            eventClick={handleEventClick}
+          />
         </div>
-      </main>
+      </div>
 
-      {/* MODALES OCULTOS (Crear y Detalle) */}
+      {/* MODALES */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
@@ -272,7 +224,6 @@ export default function Dashboard() {
           </div>
         </div>
       )}
-
-    </div>
+    </>
   );
 }
