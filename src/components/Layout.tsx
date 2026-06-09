@@ -30,11 +30,14 @@ export default function Layout() {
           <NavLink to="/clientes" className={navClass}>
             <span>👥</span> Clientes
           </NavLink>
+          <NavLink to="/menus" className={navClass}>
+            <span>🍔</span> Menús y Catálogo
+          </NavLink>
+          <NavLink to="/tematicas" className={navClass}>
+            <span>🎭</span> Temáticas
+          </NavLink>
           
           {/* Estos los conectaremos después */}
-          <div className="flex items-center gap-3 px-4 py-3 text-stone-500 rounded-lg cursor-not-allowed">
-            <span>🍔</span> Menús y Catálogo
-          </div>
           <div className="flex items-center gap-3 px-4 py-3 text-stone-500 rounded-lg cursor-not-allowed">
             <span>📦</span> Insumos
           </div>
@@ -55,7 +58,6 @@ export default function Layout() {
 
       {/* ÁREA DE TRABAJO PRINCIPAL */}
       <main className="flex-1 overflow-y-auto p-8 relative">
-        {/* MAGIA DE REACT ROUTER: Aquí se inyecta el Calendario o la tabla de Clientes */}
         <Outlet /> 
       </main>
 
