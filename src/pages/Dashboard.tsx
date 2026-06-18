@@ -1,229 +1,235 @@
 import { useEffect, useState } from 'react';
-import FullCalendar from '@fullcalendar/react';
-import dayGridPlugin from '@fullcalendar/daygrid';
-import interactionPlugin from '@fullcalendar/interaction';
 import api from '../api/axiosConfig';
 
 export default function Dashboard() {
-  const [eventosCalendario, setEventosCalendario] = useState([]);
-  
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isDetalleModalOpen, setIsDetalleModalOpen] = useState(false);
-  const [eventoSeleccionado, setEventoSeleccionado] = useState<any>(null);
-  
-  const [listaClientes, setListaClientes] = useState<any[]>([]);
-  const [listaMenus, setListaMenus] = useState<any[]>([]);
+  const [reservas, setReservas] = useState<any[]>([]);
+  const [insumosGlobales, setInsumosGlobales] = useState<any[]>([]);
+  const [requerimientosMap, setRequerimientosMap] = useState<Record<number, any[]>>({});
+  const [loading, setLoading] = useState(true);
 
-  const [idCliente, setIdCliente] = useState('');
-  const [idMenu, setIdMenu] = useState('');
-  const [fechaEvento, setFechaEvento] = useState('');
-  const [cantNinos, setCantNinos] = useState('');
-
-  const fetchEventos = async () => {
+  const fetchData = async () => {
     try {
-      const response = await api.get('/eventos');
-      const eventosMapeados = response.data.map((evento: any) => {
-        let fechaString = evento.fechaEvento;
-        if (Array.isArray(fechaString)) {
-            const mes = String(fechaString[1]).padStart(2, '0');
-            const dia = String(fechaString[2]).padStart(2, '0');
-            fechaString = `${fechaString[0]}-${mes}-${dia}`;
-        }
-        
-        const nombreCliente = evento.cliente?.nombre || 'Cliente'; 
-        
-        return {
-          id: evento.idEvento, 
-          title: `Reserva - ${nombreCliente}`, 
-          date: fechaString,
-          extendedProps: {
-            cliente: `${nombreCliente} ${evento.cliente?.apellido || ''}`,
-            menu: evento.menu?.nombreMenu || 'No especificado',
-            estado: evento.estado?.descripcion || 'Ingresado',
-            cantNinos: evento.cantNinos
-          }
-        };
-      });
-      setEventosCalendario(eventosMapeados);
-    } catch (error) {
-      console.error("Error cargando los eventos:", error);
-    }
-  };
-
-  const fetchCatalogos = async () => {
-    try {
-      const [resClientes, resMenus] = await Promise.all([
-        api.get('/clientes'),
-        api.get('/menus')
+      setLoading(true);
+      const [resReservas, resInsumos] = await Promise.all([
+        api.get('/reservas'),
+        api.get('/insumos')
       ]);
-      setListaClientes(resClientes.data);
-      setListaMenus(resMenus.data);
+      const reservasData = resReservas.data.reverse();
+      setReservas(reservasData);
+      setInsumosGlobales(resInsumos.data);
+
+      const reqs: Record<number, any[]> = {};
+      for (const r of reservasData) {
+        if (r.menu?.idMenu && r.cantidadNinos > 0) {
+          const reqRes = await api.get(`/reservas/requerimientos-reales?idMenu=${r.menu.idMenu}&ninos=${r.cantidadNinos}`);
+          reqs[r.idReserva] = reqRes.data;
+        }
+      }
+      setRequerimientosMap(reqs);
+
     } catch (error) {
-      console.error("Error cargando los catálogos:", error);
+      console.error("Error cargando el motor logístico:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchEventos();
-    fetchCatalogos(); 
+    fetchData();
   }, []);
 
-  const handleCrearReserva = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleCambiarEstado = async (reserva: any, nuevoEstado: string) => {
+    if (!window.confirm(`¿Estás seguro de cambiar el estado a ${nuevoEstado}? ${nuevoEstado === 'CONFIRMADA' ? 'Esto descontará el stock de bodega.' : ''}`)) return;
     try {
-      const requestDTO = {
-        idCliente: Number(idCliente),
-        idMenu: Number(idMenu),
-        fechaEvento: fechaEvento,
-        cantNinos: Number(cantNinos)
-      };
-
-      await api.post('/eventos/reservar', requestDTO);
-
-      setIsModalOpen(false);
-      setIdCliente('');
-      setIdMenu('');
-      setFechaEvento('');
-      setCantNinos('');
-      fetchEventos(); 
-
+      await api.put(`/reservas/${reserva.idReserva}`, { ...reserva, estado: nuevoEstado });
+      fetchData(); 
     } catch (error) {
-      console.error("Error al crear la reserva:", error);
-      alert("Error al guardar. Revisa la consola.");
+      alert("Error al actualizar la reserva.");
     }
   };
 
-  const handleEventClick = (info: any) => {
-    setEventoSeleccionado({
-      id: info.event.id,
-      title: info.event.title,
-      fecha: info.event.startStr,
-      ...info.event.extendedProps
-    });
-    setIsDetalleModalOpen(true);
-  };
-
-  const handleEliminarReserva = async () => {
-    const confirmar = window.confirm("¿Estás seguro de que deseas cancelar esta reserva?");
-    if (!confirmar) return;
-
+  // NUEVA FUNCIÓN: Eliminar permanentemente la reserva rechazada
+  const handleEliminarReserva = async (idReserva: number) => {
+    if (!window.confirm("¿Estás seguro de eliminar este registro histórico? Esta acción no se puede deshacer.")) return;
     try {
-      await api.delete(`/eventos/${eventoSeleccionado.id}`);
-      setIsDetalleModalOpen(false);
-      fetchEventos(); 
+      await api.delete(`/reservas/${idReserva}`);
+      fetchData(); 
     } catch (error) {
       console.error("Error al eliminar la reserva:", error);
-      alert("Hubo un error al cancelar la reserva. Revisa la consola.");
+      alert("Hubo un problema al intentar eliminar este registro del sistema.");
     }
   };
 
-  return (
-    <>
-      <div className="max-w-6xl mx-auto bg-white p-6 rounded-2xl shadow-xl">
-        <div className="flex justify-between items-center mb-6 border-b pb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-amber-800">Panel de Calendario</h1>
-            <p className="text-stone-500">Gestión de eventos y disponibilidad</p>
-          </div>
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-amber-700 hover:bg-amber-800 text-white font-semibold py-2 px-4 rounded-lg transition-colors cursor-pointer shadow-md"
-          >
-            + Nueva Reserva
-          </button>
-        </div>
+  const formatearFecha = (fechaHoraStr: string) => {
+    if (!fechaHoraStr) return 'N/A';
+    const fecha = new Date(fechaHoraStr);
+    return fecha.toLocaleDateString('es-CL') + ' ' + fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
+  };
 
-        <div className="calendar-container">
-          <FullCalendar
-            plugins={[ dayGridPlugin, interactionPlugin ]}
-            initialView="dayGridMonth"
-            events={eventosCalendario}
-            locale="es"
-            height="auto"
-            headerToolbar={{ left: 'prev,next today', center: 'title', right: 'dayGridMonth' }}
-            buttonText={{ today: 'Hoy', month: 'Mes' }}
-            eventClick={handleEventClick}
-          />
+  if (loading) {
+    return <div className="flex justify-center items-center h-64 text-stone-500 font-medium">Cargando motor logístico...</div>;
+  }
+
+  return (
+    <div className="max-w-full mx-auto space-y-6">
+      
+      <div className="bg-white p-8 rounded-2xl shadow-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-l-8 border-amber-700">
+        <div>
+          <h1 className="text-3xl font-black text-stone-800 tracking-tight">Motor de Asignación Logística</h1>
+          <p className="text-stone-500 mt-1">Cruce automático de minutas vs. Recetas Reales y Bodega</p>
+        </div>
+        <div className="flex gap-6 bg-stone-50 p-4 rounded-xl border border-stone-200">
+          <div className="text-center">
+            <p className="text-xs text-stone-500 font-bold uppercase">Minutas</p>
+            <p className="text-3xl font-black text-amber-700">{reservas.length}</p>
+          </div>
+          <div className="w-px bg-stone-300 self-stretch"></div>
+          <div className="text-center">
+            <p className="text-xs text-stone-500 font-bold uppercase">Items Bodega</p>
+            <p className="text-3xl font-black text-green-700">{insumosGlobales.length}</p>
+          </div>
         </div>
       </div>
 
-      {/* MODALES */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-md">
-            <h2 className="text-2xl font-bold text-amber-800 mb-4">Agendar Nueva Reserva</h2>
-            <form onSubmit={handleCrearReserva} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">Cliente</label>
-                <select value={idCliente} onChange={(e) => setIdCliente(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white" required>
-                  <option value="" disabled>Seleccione un cliente...</option>
-                  {listaClientes.map((c) => (
-                    <option key={c.idCliente} value={c.idCliente}>{c.nombre}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-stone-700 mb-1">Menú Escogido</label>
-                <select value={idMenu} onChange={(e) => setIdMenu(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none bg-white" required>
-                  <option value="" disabled>Seleccione un menú...</option>
-                  {listaMenus.map((m) => (
-                    <option key={m.idMenu} value={m.idMenu}>{m.nombreMenu}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex gap-4">
-                <div className="w-1/2">
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Fecha del Evento</label>
-                  <input type="date" value={fechaEvento} onChange={(e) => setFechaEvento(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" required />
-                </div>
-                <div className="w-1/2">
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Cant. Niños</label>
-                  <input type="number" min="0" value={cantNinos} onChange={(e) => setCantNinos(e.target.value)} className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none" required />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-6 pt-2">
-                <button type="button" onClick={() => setIsModalOpen(false)} className="bg-stone-200 hover:bg-stone-300 text-stone-700 px-4 py-2 rounded-lg cursor-pointer">Cancelar</button>
-                <button type="submit" className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg cursor-pointer">Guardar</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <div className="bg-white p-6 rounded-2xl shadow-xl overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[1100px]">
+          <thead>
+            <tr className="bg-stone-100 text-stone-700 border-b-2 border-stone-200 text-sm">
+              <th className="p-4 font-bold">Solicitante</th>
+              <th className="p-4 font-bold w-44">Fecha Evento</th>
+              <th className="p-4 font-bold w-52">Minuta Base</th>
+              <th className="p-4 font-bold bg-amber-50/50 text-amber-900 border-l border-amber-200 w-80">📦 Desglose de Insumos (Receta)</th>
+              <th className="p-4 font-bold bg-purple-50/50 text-purple-900 border-l border-purple-200 text-center w-36">🧑‍🍳 Staff (2:5)</th>
+              <th className="p-4 font-bold text-center">Estado</th>
+              <th className="p-4 font-bold text-right">Decisión Logística</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reservas.length > 0 ? (
+              reservas.map((r) => {
+                const ninos = r.cantidadNinos || 0;
+                const staffRequerido = Math.ceil(ninos / 5) * 2;
+                const requerimientos = requerimientosMap[r.idReserva] || [];
 
-      {isDetalleModalOpen && eventoSeleccionado && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow-2xl w-full max-w-sm border-t-8 border-amber-700">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-2xl font-bold text-stone-800">Detalles de Reserva</h2>
-              <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-1 rounded">
-                {eventoSeleccionado.estado}
-              </span>
-            </div>
-            
-            <div className="space-y-3 mb-6">
-              <p className="text-stone-600"><strong className="text-stone-800">Cliente:</strong> {eventoSeleccionado.cliente}</p>
-              <p className="text-stone-600"><strong className="text-stone-800">Fecha:</strong> {eventoSeleccionado.fecha}</p>
-              <p className="text-stone-600"><strong className="text-stone-800">Menú:</strong> {eventoSeleccionado.menu}</p>
-              <p className="text-stone-600"><strong className="text-stone-800">Niños:</strong> {eventoSeleccionado.cantNinos}</p>
-            </div>
+                return (
+                  <tr key={r.idReserva} className="border-b border-stone-100 hover:bg-stone-50/80 text-sm">
+                    
+                    <td className="p-4">
+                      <p className="font-extrabold text-stone-800">{r.cliente?.nombre}</p>
+                      <p className="text-xs text-stone-500 font-medium">📞 {r.cliente?.telefono}</p>
+                      <p className="text-xs text-stone-500 font-medium">📧 {r.cliente?.correo}</p>
+                    </td>
 
-            <div className="flex justify-between mt-6">
-              <button 
-                onClick={handleEliminarReserva}
-                className="bg-red-50 text-red-600 hover:bg-red-100 font-semibold px-4 py-2 rounded-lg transition-colors cursor-pointer border border-red-200"
-              >
-                Cancelar Reserva
-              </button>
-              <button 
-                onClick={() => setIsDetalleModalOpen(false)}
-                className="bg-stone-800 hover:bg-stone-900 text-white px-4 py-2 rounded-lg cursor-pointer transition-colors"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
+                    <td className="p-4 font-semibold text-stone-700">
+                      {formatearFecha(r.fechaHora)}
+                      <p className="text-xs font-black text-green-700 mt-1">Estimado: ${r.totalEstimado?.toLocaleString('es-CL')}</p>
+                    </td>
+
+                    <td className="p-4 text-xs text-stone-600 font-medium max-w-[200px]">
+                      <p className="font-bold text-amber-800 mb-1">{r.menu?.nombreMenu}</p>
+                      <p className="truncate" title={r.observaciones}>{r.observaciones}</p>
+                    </td>
+
+                    <td className="p-4 bg-amber-50/20 border-l border-amber-100">
+                      {requerimientos.length > 0 ? (
+                        <div className="space-y-1.5 text-xs">
+                          {requerimientos.map((req: any) => {
+                            const tieneStock = req.stockActual >= req.cantidadTotalRequerida;
+                            const faltante = req.cantidadTotalRequerida - req.stockActual;
+                            
+                            return (
+                              <div key={req.idInsumo} className="flex flex-col bg-white p-1.5 rounded border border-stone-200/60 shadow-sm">
+                                <div className="flex justify-between font-medium">
+                                  <span className="text-stone-800">{req.nombre}</span>
+                                  <span className="text-stone-500">{req.cantidadTotalRequerida} {req.unidadMedida} (Stock: {req.stockActual})</span>
+                                </div>
+                                <div className="text-right mt-0.5 font-bold">
+                                  {tieneStock ? (
+                                    <span className="text-green-600 text-[10px] bg-green-50 px-1 rounded">✔ Stock Suficiente</span>
+                                  ) : (
+                                    <span className="text-red-600 text-[10px] bg-red-50 px-1 rounded">⚠️ Comprar Faltante: {faltante} {req.unidadMedida}</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-stone-400 text-xs italic">El menú seleccionado no tiene recetas cargadas o está a la carta.</p>
+                      )}
+                    </td>
+
+                    <td className="p-4 bg-purple-50/20 border-l border-purple-100 text-center">
+                      <p className="font-bold text-stone-800">{ninos} Niños</p>
+                      <p className="text-xs text-purple-900 font-extrabold bg-purple-100 px-2 py-1 rounded-full mt-1 inline-block">
+                        🧑‍🍳 {staffRequerido} Staff
+                      </p>
+                    </td>
+
+                    <td className="p-4 text-center">
+                      {r.estado === 'PENDIENTE' ? (
+                        <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-xs font-bold block">PENDIENTE</span>
+                      ) : r.estado === 'CONFIRMADA' ? (
+                        <span className="bg-green-100 text-green-800 px-2.5 py-1 rounded-full text-xs font-bold block">CONFIRMADA</span>
+                      ) : (
+                        <span className="bg-red-100 text-red-800 px-2.5 py-1 rounded-full text-xs font-bold block">RECHAZADA</span>
+                      )}
+                    </td>
+
+                    <td className="p-4 text-right">
+                      {r.estado === 'PENDIENTE' && (
+                        <div className="flex flex-col gap-2.5 max-w-[140px] ml-auto">
+                          <button 
+                            onClick={() => handleCambiarEstado(r, 'CONFIRMADA')} 
+                            className="bg-green-600 hover:bg-green-700 text-white py-1.5 px-3 rounded-lg font-bold text-xs transition-colors cursor-pointer shadow-sm text-center"
+                          >
+                            Aprobar Evento
+                          </button>
+                          <button 
+                            onClick={() => handleCambiarEstado(r, 'RECHAZADA')} 
+                            className="bg-red-600 hover:bg-red-700 text-white py-1.5 px-3 rounded-lg font-bold text-xs transition-colors cursor-pointer shadow-sm text-center"
+                          >
+                            Rechazar Solicitud
+                          </button>
+                        </div>
+                      )}
+                      
+                      {r.estado !== 'PENDIENTE' && (
+                        <div className="flex flex-col gap-2.5 max-w-[140px] ml-auto">
+                          <button 
+                            onClick={() => handleCambiarEstado(r, 'PENDIENTE')} 
+                            className="bg-stone-200 hover:bg-stone-300 text-stone-700 py-1.5 px-3 rounded-md font-bold text-xs transition-colors cursor-pointer"
+                          >
+                            Revertir Decisión
+                          </button>
+                          
+                          {/* BOTÓN DE ELIMINAR SOLO DISPONIBLE SI ESTÁ RECHAZADA */}
+                          {r.estado === 'RECHAZADA' && (
+                            <button 
+                              onClick={() => handleEliminarReserva(r.idReserva)} 
+                              className="text-red-500 hover:text-red-700 font-bold text-xs py-1 transition-colors cursor-pointer flex items-center justify-end gap-1"
+                            >
+                              <span>🗑️</span> Eliminar Registro
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </td>
+
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={7} className="p-8 text-center text-stone-500 italic">
+                  No se registran minutas ni solicitudes de eventos.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+    </div>
   );
 }

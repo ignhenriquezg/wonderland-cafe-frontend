@@ -6,15 +6,25 @@ import Menus from './pages/Menus';
 import Tematicas from './pages/Tematicas';
 import Insumos from './pages/Insumos';
 import Personal from './pages/Personal';
+import Asignaciones from './pages/Asignaciones'; 
 import Layout from './components/Layout';
+import Landing from './pages/Landing';
+import StaffDashboard from './pages/StaffDashboard'; // <-- IMPORTACIÓN DEL PORTAL DE STAFF
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/login" />} />
+        {/* RUTA PÚBLICA (El cliente llega aquí primero) */}
+        <Route path="/" element={<Landing />} />
+        
+        {/* RUTA DE AUTENTICACIÓN */}
         <Route path="/login" element={<Login />} />
         
+        {/* RUTA DEL STAFF: Portal de trabajadores (Fuera del Layout del Admin) */}
+        <Route path="/staff" element={<StaffDashboard />} />
+        
+        {/* RUTAS PRIVADAS: Todo el Panel Administrativo (Con barra lateral negra) */}
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/clientes" element={<Clientes />} />
@@ -22,6 +32,9 @@ function App() {
           <Route path="/tematicas" element={<Tematicas />} />
           <Route path="/insumos" element={<Insumos />} />
           <Route path="/personal" element={<Personal />} />
+          
+          {/* Puente Logístico para asignar eventos al Staff */}
+          <Route path="/asignaciones" element={<Asignaciones />} />
         </Route>
         
       </Routes>

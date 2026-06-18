@@ -22,7 +22,7 @@ export default function Layout() {
           <p className="text-sm text-stone-400">Admin Panel</p>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-2">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
           {/* RUTAS CONECTADAS */}
           <NavLink to="/dashboard" className={navClass}>
             <span>📅</span> Reservas
@@ -41,6 +41,11 @@ export default function Layout() {
           </NavLink>
           <NavLink to="/personal" className={navClass}>
             <span>🧑‍🍳</span> Personal (Staff)
+          </NavLink>
+          
+          {/* NUEVA RUTA: ASIGNACIONES DE TURNOS */}
+          <NavLink to="/asignaciones" className={navClass}>
+            <span>📋</span> Asignaciones
           </NavLink>
         </nav>
 

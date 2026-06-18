@@ -13,15 +13,21 @@ export default function Login() {
     setErrorMsg(''); 
 
     try {
-
       const response = await api.post('/auth/login', { correo, password });
 
-      const token = response.data.token;
+      // Extraemos los datos enriquecidos que ahora manda el backend
+      const { token, rol, idPersonal } = response.data;
       
       localStorage.setItem('token', token);
-      console.log("¡Token guardado con éxito!");
+      localStorage.setItem('idPersonal', idPersonal.toString());
+      localStorage.setItem('rolUsuario', rol);
 
-      navigate('/dashboard');
+      // Enrutador Lógico
+      if (rol.toUpperCase() === 'ADMINISTRADOR') {
+        navigate('/dashboard'); // Va al panel negro
+      } else {
+        navigate('/staff'); // Va al nuevo portal de trabajadores
+      }
 
     } catch (error) {
       console.error("Error de autenticación", error);
@@ -35,7 +41,7 @@ export default function Login() {
         
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-amber-800">Wonderland Café</h1>
-          <p className="text-stone-500 mt-2">Ingresa tus credenciales del sistema</p>
+          <p className="text-stone-500 mt-2">Ingresa tus credenciales de acceso</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">
@@ -49,7 +55,7 @@ export default function Login() {
               value={correo}
               onChange={(e) => setCorreo(e.target.value)}
               className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
-              placeholder="admin@wonderland.cl"
+              placeholder="ejemplo@wonderland.cl"
               required
             />
           </div>
@@ -68,7 +74,6 @@ export default function Login() {
             />
           </div>
 
-          {/* Mensaje de error visual si falla el login */}
           {errorMsg && (
             <div className="text-red-500 text-sm text-center font-medium bg-red-50 p-2 rounded">
               {errorMsg}
